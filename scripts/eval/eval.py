@@ -164,6 +164,37 @@ def evaluate_model(
     return (trainer, logger_keys, eval_gauntlet_callback, eval_gauntlet_df)
 
 
+###############
+import marlin
+
+# Save checkpoint name here since passing around extra args seems to confuse the eval harness
+MARLIN_CHECKPOINT = '' 
+
+def get_llama_marlin(name, *args, **kwargs):
+    import torch
+    def skip(*args, **kwargs):
+        pass
+    torch.nn.init.kaiming_uniform_ = skip
+    torch.nn.init.uniform_ = skip
+    torch.nn.init.normal_ = skip
+    from transformers import LlamaForCausalLM
+    model = LlamaForCausalLM.from_pretrained(name, torch_dtype='auto')
+    # Not really sure why this is sometimes > 1, but it messes up quantized inference ...
+    # Fortunately, just setting it to 1 doesn't seem to affect standard inference
+    model.config.pretraining_tp = 1
+    def name_filter(n):
+        if 'q_proj' in n or 'k_proj' in n or 'v_proj' in n or 'o_proj' in n:
+            return True
+        if 'mlp.gate_proj' in n or 'mlp.up_proj' in n or 'mlp.down_proj' in n:
+            return True
+        return False
+    groupsize = -1 if MARLIN_CHECKPOINT.endswith('marlin') else 128
+    marlin.replace_linear(model, name_filter, groupsize=groupsize)
+    model.load_state_dict(torch.load(MARLIN_CHECKPOINT))
+    return model
+###############
+
+
 def main(cfg: DictConfig) -> Tuple[List[Trainer], pd.DataFrame]:
     # Run user provided code if specified
     code_paths = pop_config(cfg,
@@ -292,6 +323,20 @@ def main(cfg: DictConfig) -> Tuple[List[Trainer], pd.DataFrame]:
                            eval_gauntlet_config)
 
     for model_cfg in model_configs:
+        original_from_pretrained = None
+        if model_cfg.model.get('marlin_path', False):
+            global MARLIN_CHECKPOINT
+            MARLIN_CHECKPOINT = model_cfg.model.get('marlin_path', '')
+            # Overwrite model load with marlin load
+            import transformers
+            if original_from_pretrained is None:
+                original_from_pretrained = transformers.AutoModelForCausalLM.from_pretrained
+            transformers.AutoModelForCausalLM.from_pretrained = staticmethod(get_llama_marlin)
+        else:
+            if original_from_pretrained is not None:
+                import transformers
+                transformers.AutoModelForCausalLM.from_pretrained = original_from_pretrained
+        
         (trainer, logger_keys, eval_gauntlet_callback,
          eval_gauntlet_df) = evaluate_model(
              model_cfg=model_cfg,

@@ -472,3 +472,15 @@ When formatting samples, `prompt_string` is prepended to the beginning, then `nu
 Thus the structure of each question's preamble is `prompt | few shot examples | context | continuation delimiter`. The continuation (aka choices for MC) is then tokenized separately and the tokens of the preamble and tokens of the continuation are concatenated. It is important to note that if the continuation delimiter has a trailing space, it is stripped and instead prepended to the continuation. Furthermore, if the continuation does not have a leading space, one will be prepended.
 
 ----
+# Evaluation using [Marlin](https://github.com/IST-DASLab/marlin)
+Add `marlin_path` to model's yaml similar to below:
+
+```yaml
+model:
+	name: marlin-demo
+	pretrained_model_name_or_path: ${model_name_or_path}
+	pretrained: true
+	marlin_path: ${marlin_path}
+```
+
+And run the gauntlet as you normally would.
