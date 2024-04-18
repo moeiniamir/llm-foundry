@@ -75,6 +75,23 @@ def evaluate_model(
         icl_seq_len=max_seq_len,
         icl_subset_num_batches=icl_subset_num_batches,
     )
+    
+    if model_cfg.get('trim_batch', False):
+        def _trim_batch(batch):
+            assert batch['attention_mask'].shape[1] == max_seq_len, 'No padding till max_seq_len found, disable batch_trim'
+            _max_len = batch['attention_mask'].sum(1).max()
+            for k in batch:
+                if isinstance(batch[k], torch.Tensor) and batch[k].shape[1] == max_seq_len:
+                    batch[k] = batch[k][:, :_max_len]
+            return batch
+        def _trim_collate_decorator(collate_fn):
+            def _trim_collate(batch):
+                return _trim_batch(collate_fn(batch))
+            return _trim_collate
+        for evaluator in evaluators:
+            evaluator.dataloader.dataloader.collate_fn = _trim_collate_decorator(
+                evaluator.dataloader.dataloader.collate_fn
+                )    
 
     # Callbacks
     callbacks: List[Callback] = [

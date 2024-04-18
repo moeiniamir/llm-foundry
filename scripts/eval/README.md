@@ -484,3 +484,15 @@ model:
 ```
 
 And run the gauntlet as you normally would.
+
+# Dynamic Padding
+Add `trim_batch` to model's yaml similar to below:
+
+```yaml
+models:
+-
+  trim_batch: true
+  ...
+```
+
+This will dynamically pad the batch to the maximum sequence length in the batch in contrast to padding to the maximum sequence length in the config. Obtains a speedup up to 10x for small batch sizes.
