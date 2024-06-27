@@ -9,8 +9,8 @@ from transformers import AutoModelForCausalLM
 model = AutoModelForCausalLM.from_pretrained("ISTA-DASLab/Llama-3-8B-Instruct-GPTQ-4bit", device_map="auto")
 evaluate(
     model, 
-    "/nfs/scistore19/alistgrp/amoeini/llm-foundry/scripts/eval/yamls/hf_eval.yaml", 
-    '/nfs/scistore19/alistgrp/amoeini/llm-foundry/scripts')
+    "/path/to/hf_eval.yaml", 
+    '/path/to/llm-foundry/scripts')
 ```
 
 ```python
@@ -21,8 +21,8 @@ import sys
 model = HQQModelForCausalLM.from_quantized("PrunaAI/meta-llama-Meta-Llama-3-8B-Instruct-HQQ-4bit-smashed")
 evaluate(
     model, 
-    "/nfs/scistore19/alistgrp/amoeini/llm-foundry/scripts/eval/yamls/hf_eval.yaml", 
-    '/nfs/scistore19/alistgrp/amoeini/llm-foundry/scripts', 
+    "/path/to/hf_eval.yaml", 
+    '/path/to/llm-foundry/scripts',
     tokenizer_name='PrunaAI/meta-llama-Meta-Llama-3-8B-Instruct-HQQ-4bit-smashed', config_overrides=sys.argv[1:])
 ```
 
