@@ -94,9 +94,10 @@ class CustomComposerHFCausalLM(HuggingFaceModel):
 models.register('custom_hf_causal_lm', func=CustomComposerHFCausalLM)
 
 
-def evaluate(model, yaml_path, scripts_dir, tokenizer_name=None):
+def evaluate(model, yaml_path, scripts_dir, tokenizer_name=None, config_overrides={}):
     with open(yaml_path) as f:
         cfg = om.load(f)
+    cfg = om.merge(cfg, om.from_cli(config_overrides))
     if 'fsdp_config' in cfg:
         cfg.pop('fsdp_config')
         print('\n'*4, 'Ignoring `fsdp_config` in the yaml file', '\n'*4)
